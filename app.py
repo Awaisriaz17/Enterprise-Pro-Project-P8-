@@ -36,20 +36,40 @@ def dashboard():
         return redirect("/")
 
     prediction = None
+    error = None
 
     if request.method == "POST":
-        file = request.files["file"]
+        print("POST WORKING")
+        
+        
+        file = request.files.get("file")
 
-        if file:
-            df = pd.read_csv(file)
+        if file and file.filename != "":
+            try:
+                df = pd.read_csv(file)
 
-            people = df["people_count"].mean()
-            noise = df["noise_level"].mean()
+                # DEBUG (optional)
+                print(df.head())
 
-            result = model.predict([[people, noise]])
-            prediction = int(result[0])
+                # Check columns exist
+                if "people_count" not in df.columns or "noise_level" not in df.columns:
+                    return "Error: CSV must contain 'people_count' and 'noise_level' columns"
 
-    return render_template("dashboard.html", prediction=prediction)
+                # Calculate values
+                people = df["people_count"].mean()
+                noise = df["noise_level"].mean()
+
+                # Prediction
+                result = model.predict([[people, noise]])
+                prediction = int(result[0])
+
+            except Exception as e:
+                error = str(e)
+        else:
+            error = "No file selected"
+
+    return render_template("dashboard.html", prediction=prediction, error=error)
+
 
 
 # LOGOUT
